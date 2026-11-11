@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudentHub | Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-hero">
+      <div class="hero-inner">
+        <a class="brand brand-invert" href="index.html" aria-label="StudentHub home">
+          <span class="brand-mark">S</span><span>Student<span class="brand-light">Hub</span></span>
+        </a>
+        <h1>All your student life,<br>in one dashboard.</h1>
+        <p>Classes, schedules, deadlines and profile — synced to your account with Firebase.</p>
+        <ul class="hero-points">
+          <li><span>◷</span> Real class schedule, editable per day</li>
+          <li><span>☑</span> Track tasks and exam deadlines</li>
+          <li><span>☺</span> Personal student profile with photo</li>
+        </ul>
+        <p class="hero-foot">© 2026 StudentHub · Student Dashboard</p>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="session-bar hidden" id="sessionBar">
+          <span class="session-who">👤 Signed in as <b id="sessionWho"></b></span>
+          <div class="session-actions">
+            <button class="small-outline" id="goDashboard" type="button">Go to dashboard</button>
+            <button class="text-link" id="switchUser" type="button">Log in as another user</button>
+          </div>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab active" data-tab="login" type="button">Log in</button>
+          <button class="auth-tab" data-tab="register" type="button">Register</button>
+        </div>
+
+        <div class="mode-badge" id="modeBadge">…</div>
+
+        <div class="auth-error" id="authError" role="alert"></div>
+
+        <!-- LOGIN -->
+        <form class="auth-form" id="formLogin">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" placeholder="you@school.edu" required autocomplete="email">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
+          <button type="submit" class="primary-button wide">Log in →</button>
+          <p class="auth-swap">New here? <button type="button" class="text-link" data-goto="register">Create an account</button></p>
+        </form>
+
+        <!-- REGISTER -->
+        <form class="auth-form hidden" id="formRegister">
+          <label for="regName">Full name</label>
+          <input id="regName" type="text" placeholder="e.g. Dela Cruz, Juan" required autocomplete="name">
+          <div class="field-row">
+            <div>
+              <label for="regStudentId">Student ID</label>
+              <input id="regStudentId" type="text" placeholder="e.g. 2025-0001">
+            </div>
+            <div>
+              <label for="regYear">Year</label>
+              <select id="regYear"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+            </div>
+          </div>
+          <label for="regProgram">Program</label>
+          <input id="regProgram" type="text" placeholder="e.g. BSCS" class="upper">
+          <label for="regEmail">Email</label>
+          <input id="regEmail" type="email" placeholder="you@school.edu" required autocomplete="email">
+          <label for="regPassword">Password</label>
+          <input id="regPassword" type="password" placeholder="At least 6 characters" required autocomplete="new-password" minlength="6">
+          <button type="submit" class="primary-button wide">Create account →</button>
+          <p class="auth-swap">Already have an account? <button type="button" class="text-link" data-goto="login">Log in</button></p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="js/auth.js?v=9"></script>
+</body>
+</html>

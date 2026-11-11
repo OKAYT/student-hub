@@ -1,0 +1,11 @@
+# personal files — never commit
+img/profile.jfif
+img/permit-test.jfif
+
+# OS / editor junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+__pycache__/
+.vscode/
+.idea/
