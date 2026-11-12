@@ -6,8 +6,8 @@
    - COR importer: paste your Certificate of Registration lines
      and the schedule is built automatically (per user account) */
 
-import { mode, auth, db } from "./firebase-init.js?v=9";
-import { demoUserFromSession, demoEndSession } from "./demo-auth.js?v=9";
+import { mode, auth, db } from "./firebase-init.js?v=10";
+import { demoUserFromSession, demoEndSession } from "./demo-auth.js?v=10";
 
 import {
   onAuthStateChanged,
@@ -167,9 +167,10 @@ function escapeHTML(text) {
 }
 
 function avatarHTML(source, labelClass) {
+  const fallback = `<div class="${labelClass} fallback">${initials(profile.name)}</div>`;
   if (source) {
     return `<img class="${labelClass}" src="${escapeHTML(source)}" alt="Profile photo"
-            onerror="this.outerHTML='<div class=&quot;${labelClass} fallback&quot;>${initials(profile.name)}</div>'">`;
+            onerror="this.outerHTML='${fallback.replace(/'/g, "&#39;")}'">`;
   }
   return `<div class="${labelClass}">${initials(profile.name)}</div>`;
 }
@@ -236,21 +237,57 @@ function renderIdentity() {
   renderProfileView();
 }
 
-function renderProfileView() {
-  const photoSlot = $("profilePhotoSlot");
-  if (photoSlot) {
-    photoSlot.innerHTML = profile.photoURL
-      ? `<div class="avatar-lg"><img src="${escapeHTML(profile.photoURL)}" alt="Profile photo" onerror="this.remove()"></div>`
-      : `<div class="avatar-lg">${initials(profile.name)}</div>`;
-    photoSlot.insertAdjacentHTML("beforeend", `<small>ID No. ${escapeHTML(profile.studentId || "—")}</small>`);
+let heroPhotoKey = null;
+
+function renderHeroPhoto() {
+  const slot = $("profilePhotoSlot");
+  if (!slot) return;
+  const url = profile.photoURL || "";
+  const key = url + "|" + initials(profile.name);
+  if (key === heroPhotoKey) return;
+  heroPhotoKey = key;
+  slot.querySelector(".avatar-xl")?.remove();
+  if (url) {
+    const img = document.createElement("img");
+    img.className = "avatar-xl";
+    img.alt = "Profile photo";
+    img.src = url;
+    img.addEventListener("error", () => {           // broken/missing photo → show initials instead
+      img.remove();
+      if (!slot.querySelector(".avatar-xl")) {
+        const div = document.createElement("div");
+        div.className = "avatar-xl";
+        div.textContent = initials(profile.name);
+        slot.prepend(div);
+      }
+    }, { once: true });
+    slot.prepend(img);
+  } else {
+    const div = document.createElement("div");
+    div.className = "avatar-xl";
+    div.textContent = initials(profile.name);
+    slot.prepend(div);
   }
+}
+
+function renderProfileView() {
+  renderHeroPhoto();
   const set = (id, value) => { const el = $(id); if (el) el.textContent = value || "—"; };
-  set("pfNameView", profile.name);
+  set("pfHeroName", profile.name);
+  set("pfHeroSub", `${profile.program || "Student"}${profile.year ? " · Year " + profile.year : ""}`);
+  set("pfChipProgram", (profile.program || "—") + (profile.year ? " – " + profile.year : ""));
+  set("pfChipSemester", profile.semester);
+  set("pfChipId", "ID " + (profile.studentId || "—"));
   set("pfStudentIdView", profile.studentId);
   set("pfProgramView", profile.program && profile.year ? `${profile.program} – ${profile.year}` : profile.program);
   set("pfSemesterView", profile.semester);
   set("pfEmailView", profile.email);
-  set("pfUnitsView", totalUnits().toFixed(1) + " units");
+  set("pfUnitsView", totalUnits().toFixed(1));
+  set("pfStatCourses", distinctCourseCount());
+  set("pfStatPending", tasks.filter(t => !t.done).length);
+  const meetings = classes.reduce((sum, c) => sum + (c.days ? c.days.length : 0), 0);
+  set("pfWeeklyView", meetings + " / week");
+  set("pfDoneView", tasks.filter(t => t.done).length + " of " + tasks.length);
 }
 
 /* ---------------- render: stats ---------------- */
@@ -954,17 +991,81 @@ classForm.addEventListener("submit", event => {
   closeClassModal();
 });
 
+/* ---------------- profile photo attach ---------------- */
+
+// Reads an image file, downscales it to a JPEG data URL that is small enough
+// to store in the Firestore profile document (~100 KB).
+function compressAvatar(file, maxSide = 512) {
+  return new Promise((resolve, reject) => {
+    const bmp = new Image();
+    bmp.onerror = () => reject(new Error("That file doesn't look like an image."));
+    bmp.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+      URL.revokeObjectURL(bmp.src);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    bmp.src = URL.createObjectURL(file);
+  });
+}
+
+let pendingPickedPhoto = null; // data URL chosen in the edit modal, saved on "Save profile"
+
+function showPhotoPreview(src) {
+  const box = $("pfPhotoPreview");
+  if (!box) return;
+  box.innerHTML = src ? `<img src="${escapeHTML(src)}" alt="Photo preview">` : "📷";
+}
+
+async function attachPickedPhoto(file, { immediate = false } = {}) {
+  if (!file) return;
+  try {
+    const dataURL = await compressAvatar(file);
+    if (immediate) {
+      // camera button on the profile hero — apply right away
+      await saveProfileData({ photoURL: dataURL });
+      showToast("Profile photo updated. 📷");
+    } else {
+      pendingPickedPhoto = dataURL;
+      showPhotoPreview(dataURL);
+      $("pfPhoto").value = "";
+      showToast("Photo attached — click Save profile to keep it.");
+    }
+  } catch (err) {
+    showToast(err.message || "Couldn't attach that image.");
+  }
+}
+
+$("pfPhotoFile").addEventListener("change", async () => {
+  const file = $("pfPhotoFile").files && $("pfPhotoFile").files[0];
+  $("pfPhotoFile").value = "";
+  await attachPickedPhoto(file, { immediate: true });
+});
+
+$("pfPhotoUpload").addEventListener("change", async () => {
+  const file = $("pfPhotoUpload").files && $("pfPhotoUpload").files[0];
+  $("pfPhotoUpload").value = "";
+  await attachPickedPhoto(file);
+});
+
 /* ---------------- profile modal ---------------- */
 
 const profileModal = $("profileModal");
 const profileForm = $("profileForm");
 
 function openProfileModal() {
+  pendingPickedPhoto = null;
   $("pfName").value = profile.name || "";
   $("pfStudentId").value = profile.studentId || "";
   $("pfProgram").value = profile.program || "";
   $("pfYear").value = profile.year || "1";
   $("pfPhoto").value = profile.photoURL || "";
+  showPhotoPreview(profile.photoURL || "");
   profileModal.classList.add("show");
   profileModal.setAttribute("aria-hidden", "false");
 }
@@ -973,6 +1074,7 @@ function closeProfileModal() {
   profileModal.classList.remove("show");
   profileModal.setAttribute("aria-hidden", "true");
   profileForm.reset();
+  pendingPickedPhoto = null;
 }
 
 profileForm.addEventListener("submit", async event => {
@@ -982,7 +1084,7 @@ profileForm.addEventListener("submit", async event => {
     studentId: $("pfStudentId").value.trim(),
     program: $("pfProgram").value.trim().toUpperCase(),
     year: $("pfYear").value,
-    photoURL: $("pfPhoto").value.trim()
+    photoURL: pendingPickedPhoto || $("pfPhoto").value.trim()
   });
   closeProfileModal();
 });

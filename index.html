@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <div class="app-shell">
@@ -218,20 +218,43 @@
           <div class="page-actions"><button class="small-outline" id="editProfileButton">✎ Edit profile</button></div>
         </div>
 
-        <article class="panel profile-panel">
-          <div class="profile-layout">
-            <div class="photo-frame" id="profilePhotoSlot">
-              <div class="avatar-lg">S</div>
+        <article class="panel profile-hero">
+          <div class="hero-cover"></div>
+          <div class="hero-main">
+            <div class="hero-avatar" id="profilePhotoSlot">
+              <div class="avatar-xl">S</div>
+              <label class="avatar-change" title="Attach your own photo">
+                <input type="file" id="pfPhotoFile" accept="image/png,image/jpeg,image/webp" hidden>
+                <span>📷</span>
+              </label>
             </div>
-            <dl class="profile-facts">
-              <div><dt>Full name</dt><dd id="pfNameView">—</dd></div>
-              <div><dt>Student ID</dt><dd id="pfStudentIdView">—</dd></div>
-              <div><dt>Program &amp; Year</dt><dd id="pfProgramView">—</dd></div>
-              <div><dt>Semester</dt><dd id="pfSemesterView">—</dd></div>
-              <div><dt>Email</dt><dd id="pfEmailView">—</dd></div>
+            <div class="hero-text">
+              <h2 id="pfHeroName">—</h2>
+              <p class="hero-sub" id="pfHeroSub">—</p>
+              <div class="hero-chips">
+                <span class="pill" id="pfChipProgram">—</span>
+                <span class="pill" id="pfChipSemester">—</span>
+                <span class="pill pill-soft" id="pfChipId">—</span>
+              </div>
+            </div>
+            <dl class="hero-stats">
+              <div><dt>Courses</dt><dd id="pfStatCourses">—</dd></div>
               <div><dt>Total units</dt><dd id="pfUnitsView">—</dd></div>
+              <div><dt>Pending tasks</dt><dd id="pfStatPending">—</dd></div>
             </dl>
           </div>
+        </article>
+
+        <article class="panel facts-panel">
+          <h3 class="panel-title">Student information</h3>
+          <dl class="profile-facts">
+            <div><dt><span class="fact-icon">🪪</span> Student ID</dt><dd id="pfStudentIdView">—</dd></div>
+            <div><dt><span class="fact-icon">🎓</span> Program &amp; Year</dt><dd id="pfProgramView">—</dd></div>
+            <div><dt><span class="fact-icon">📅</span> Semester</dt><dd id="pfSemesterView">—</dd></div>
+            <div><dt><span class="fact-icon">✉️</span> Email</dt><dd id="pfEmailView">—</dd></div>
+            <div><dt><span class="fact-icon">📚</span> Weekly meetings</dt><dd id="pfWeeklyView">—</dd></div>
+            <div><dt><span class="fact-icon">✅</span> Tasks done</dt><dd id="pfDoneView">—</dd></div>
+          </dl>
         </article>
         <footer>© 2026 StudentHub · Student Dashboard <span>Made for learning and progress.</span></footer>
       </section>
@@ -309,7 +332,18 @@
         <div><label for="pfYear">Year</label><select id="pfYear"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
       </div>
       <label for="pfProgram">Program</label><input id="pfProgram" type="text" placeholder="e.g. BSCS" maxlength="30">
-      <label for="pfPhoto">Photo URL <small>(optional — a path like img/photo.jpg works too)</small></label><input id="pfPhoto" type="text" placeholder="https://... or img/photo.jpg" maxlength="400">
+      <label>Profile photo</label>
+      <div class="photo-picker">
+        <div class="photo-preview" id="pfPhotoPreview">📷</div>
+        <div class="photo-picker-actions">
+          <label class="photo-upload-btn">
+            <input type="file" id="pfPhotoUpload" accept="image/png,image/jpeg,image/webp" hidden>
+            📎 Attach a photo
+          </label>
+          <small>Pick an image from your device — it's resized and saved to your profile. Or paste an image URL below.</small>
+        </div>
+      </div>
+      <label for="pfPhoto">Photo URL <small>(optional — overrides the attached photo)</small></label><input id="pfPhoto" type="text" placeholder="https://... or img/photo.jpg" maxlength="400">
       <div class="modal-actions"><button type="button" class="small-outline" id="cancelProfileModal">Cancel</button><button type="submit" class="primary-button">Save profile</button></div>
     </form>
   </div>
@@ -327,6 +361,6 @@
   </div>
 
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="js/app.js?v=9"></script>
+  <script type="module" src="js/app.js?v=10"></script>
 </body>
 </html>

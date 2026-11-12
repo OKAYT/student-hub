@@ -1,5 +1,5 @@
 /* Login / Registration page logic (login.html) */
-import { mode, auth, db } from "./firebase-init.js?v=9";
+import { mode, auth, db } from "./firebase-init.js?v=10";
 import { demoRegister, demoSignIn, demoStartSession, demoUserFromSession, demoEndSession } from "./demo-auth.js";
 
 import {
