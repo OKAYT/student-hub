@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
   <div class="app-shell">
@@ -26,6 +26,7 @@
         <a class="nav-link active" href="#/overview" data-screen="overview"><span class="nav-icon">▦</span> Overview</a>
         <a class="nav-link" href="#/schedule" data-screen="schedule"><span class="nav-icon">◷</span> Schedule</a>
         <a class="nav-link" href="#/tasks" data-screen="tasks"><span class="nav-icon">☑</span> Tasks &amp; Deadlines</a>
+        <a class="nav-link" href="#/reminders" data-screen="reminders"><span class="nav-icon">⏰</span> Reminders</a>
         <a class="nav-link" href="#/announcements" data-screen="announcements"><span class="nav-icon">♧</span> Announcements</a>
         <a class="nav-link" href="#/profile" data-screen="profile"><span class="nav-icon">☺</span> My Profile</a>
       </nav>
@@ -47,7 +48,7 @@
         <div class="topbar-actions">
           <span class="user-email" id="userEmail"></span>
           <button class="icon-button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">◐</button>
-          <button class="notification-button" id="notificationButton" aria-label="Notifications">♧<i></i></button>
+          <button class="notification-button" id="notificationButton" aria-label="Reminders" title="Reminders">⏰<i></i></button>
           <button id="topAvatarSlot" class="avatar-slot" title="Open my profile" style="all:unset;cursor:pointer"></button>
         </div>
       </header>
@@ -62,6 +63,20 @@
           </div>
           <button class="primary-button" id="addTaskTop">＋ Add a task</button>
         </div>
+
+        <section class="onboarding-card" id="onboardingCard" hidden>
+          <div class="onboard-icon">📸</div>
+          <div class="onboard-text">
+            <h2>Set up your whole semester in 30 seconds</h2>
+            <p>Take one photo of your Certificate of Registration — StudentHub reads it and builds your weekly schedule automatically. No typing needed.</p>
+          </div>
+          <div class="onboard-actions">
+            <button class="primary-button" id="onboardImport">📸 Import my COR</button>
+            <button class="small-outline" id="onboardManual">Add classes manually</button>
+          </div>
+        </section>
+
+        <section class="briefing" id="briefing" aria-live="polite"></section>
 
         <section class="stats-grid" aria-label="Student statistics">
           <article class="stat-card">
@@ -88,6 +103,11 @@
 
         <section class="content-grid">
           <div class="left-column">
+            <article class="panel" id="examPanel" hidden>
+              <div class="panel-heading"><div><h2>Exam countdown</h2><p class="muted">Upcoming exams and how ready you are</p></div></div>
+              <div class="exam-cards" id="examCards"></div>
+            </article>
+
             <article class="panel">
               <div class="panel-heading">
                 <div><h2>Today's Classes</h2><p class="muted" id="todaySpan">—</p></div>
@@ -146,6 +166,7 @@
             <p class="muted">Manage your weekly classes — add, edit, remove, or import them from your COR.</p>
           </div>
           <div class="page-actions">
+            <button class="small-outline" id="exportIcsButton">🗓 Export .ics</button>
             <button class="small-outline" id="importCorButton">📥 Import from COR</button>
             <button class="primary-button" id="addClassButton">＋ Add class</button>
           </div>
@@ -157,9 +178,16 @@
         </article>
 
         <article class="panel">
-          <div class="panel-heading"><div><h2>Weekly timetable</h2><p class="muted">Tap a day to view and edit its classes</p></div></div>
+          <div class="panel-heading">
+            <div><h2>Weekly timetable</h2><p class="muted">Tap a day to view and edit its classes</p></div>
+            <div class="filter-chips" id="scheduleViewToggle">
+              <button class="filter-chip active" data-view="day" type="button">Day</button>
+              <button class="filter-chip" data-view="week" type="button">Week</button>
+            </div>
+          </div>
           <div class="day-tabs" id="dayTabs"></div>
           <div class="schedule-editor" id="scheduleEditor"></div>
+          <div class="week-wrap" id="weekWrap" hidden><div class="week-grid" id="weekGrid"></div></div>
           <p class="muted schedule-note">Times follow your Certificate of Registration (COR). Double-check unclear rows against your printed copy.</p>
         </article>
         <footer>© 2026 StudentHub · Student Dashboard <span>Made for learning and progress.</span></footer>
@@ -176,6 +204,15 @@
           <div class="page-actions"><button class="primary-button" id="addTaskButton">＋ New task</button></div>
         </div>
 
+        <article class="panel quick-add-panel">
+          <div class="quick-add-row">
+            <span class="qa-bolt" aria-hidden="true">⚡</span>
+            <input id="quickAddInput" type="text" autocomplete="off"
+              placeholder='Quick add — try "ESC 314 docs Fri 5pm" and press Enter'>
+          </div>
+          <div class="qa-preview" id="qaPreview" hidden></div>
+        </article>
+
         <article class="panel">
           <div class="panel-heading">
             <div><h2>All tasks</h2><p class="muted"><b id="pendingCount2">0</b> pending · <b id="doneCount">0</b> completed</p></div>
@@ -186,6 +223,50 @@
             </div>
           </div>
           <div class="task-list" id="taskList"></div>
+        </article>
+
+        <article class="panel focus-panel">
+          <div class="panel-heading"><div><h2>Focus timer</h2><p class="muted">25 minutes of focus · 5-minute break — minutes are logged per subject</p></div></div>
+          <div class="focus-layout">
+            <div class="focus-dial" id="focusDial">
+              <svg viewBox="0 0 120 120" width="150" height="150" aria-hidden="true">
+                <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+                <circle class="ring-fg" id="focusRing" cx="60" cy="60" r="52"></circle>
+              </svg>
+              <div class="focus-readout"><strong id="focusTime">25:00</strong><small id="focusPhase">Focus</small></div>
+            </div>
+            <div class="focus-side">
+              <label for="focusCourse">Studying for</label>
+              <select id="focusCourse"></select>
+              <div class="focus-buttons">
+                <button type="button" class="primary-button" id="focusStart">Start focus</button>
+                <button type="button" class="small-outline" id="focusReset">Reset</button>
+              </div>
+              <p class="muted focus-hint">Tip: press ▶ on any task to start a session for its subject.</p>
+              <div class="focus-week" id="focusWeek"></div>
+            </div>
+          </div>
+        </article>
+        <footer>© 2026 StudentHub · Student Dashboard <span>Made for learning and progress.</span></footer>
+      </section>
+
+      <!-- ============ SCREEN: REMINDERS ============ -->
+      <section class="screen" id="screen-reminders">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">NEVER MISS A THING</p>
+            <h1>Reminders</h1>
+            <p class="muted">Get a nudge before a class starts or a task is due — even when you're on another tab.</p>
+          </div>
+          <div class="page-actions">
+            <button class="small-outline" id="permButton" type="button">🔔 Turn on notifications</button>
+            <button class="primary-button" id="addReminderButton">＋ New reminder</button>
+          </div>
+        </div>
+
+        <article class="panel">
+          <div class="panel-heading"><div><h2>My reminders</h2><p class="muted">Checked every minute while StudentHub is open</p></div></div>
+          <div class="reminder-list" id="reminderList"></div>
         </article>
         <footer>© 2026 StudentHub · Student Dashboard <span>Made for learning and progress.</span></footer>
       </section>
@@ -268,6 +349,7 @@
       <label for="taskTitle">Task title</label><input id="taskTitle" type="text" placeholder="e.g. Finish ESC 311 problem set" required maxlength="90">
       <label for="taskCourse">Subject</label><input id="taskCourse" type="text" placeholder="e.g. ESC 311" required maxlength="50">
       <label for="taskDue">Due date</label><input id="taskDue" type="date" required>
+      <label class="check-row"><input type="checkbox" id="taskIsExam"> This is an exam — shows a countdown on the Overview</label>
       <div class="modal-actions"><button type="button" class="small-outline" id="cancelModal">Cancel</button><button type="submit" class="primary-button">Save task</button></div>
     </form>
   </div>
@@ -295,6 +377,8 @@
         <label class="chip"><input type="checkbox" name="days" value="Sat">Sat</label>
         <label class="chip"><input type="checkbox" name="days" value="Sun">Sun</label>
       </div>
+      <label>Subject color</label>
+      <div class="tint-picker" id="tintPicker"></div>
       <div class="modal-actions"><button type="button" class="small-outline" id="cancelClassModal">Cancel</button><button type="submit" class="primary-button">Save class</button></div>
     </form>
   </div>
@@ -360,7 +444,52 @@
     </form>
   </div>
 
+  <!-- reminder modal -->
+  <div class="modal-backdrop" id="reminderModal" aria-hidden="true">
+    <form class="modal" id="reminderForm">
+      <div class="modal-heading"><div><p class="eyebrow">REMINDERS</p><h2>New reminder</h2></div><button type="button" class="close-button" id="closeReminderModal" aria-label="Close">×</button></div>
+      <label for="remLink">Linked to (optional)</label>
+      <select id="remLink"><option value="">Nothing — just a time I choose</option></select>
+      <label for="remTitle">Reminder text</label><input id="remTitle" type="text" placeholder="e.g. ESC 311 class starts soon" required maxlength="90">
+      <div class="field-row">
+        <div><label for="remDate">Date</label><input id="remDate" type="date" required></div>
+        <div><label for="remTime">Time</label><input id="remTime" type="time" required value="17:00"></div>
+      </div>
+      <label class="check-row"><input type="checkbox" id="remWeekly"> Repeat every week</label>
+      <p class="muted rem-perm-note" id="remPermNote"></p>
+      <div class="modal-actions"><button type="button" class="small-outline" id="cancelReminderModal">Cancel</button><button type="submit" class="primary-button">Save reminder</button></div>
+    </form>
+  </div>
+
+  <!-- search overlay (press /) -->
+  <div class="search-overlay" id="searchOverlay" hidden>
+    <div class="search-box">
+      <div class="search-row">
+        <span aria-hidden="true">⌕</span>
+        <input id="searchInput" type="text" placeholder="Search tasks, classes, announcements, reminders…" autocomplete="off">
+      </div>
+      <div class="search-results" id="searchResults"></div>
+      <p class="search-hint">Esc to close · Enter opens the top result</p>
+    </div>
+  </div>
+
+  <!-- first-login welcome tour -->
+  <div class="tour-overlay" id="tourOverlay" hidden>
+    <div class="tour-card" role="dialog" aria-modal="true" aria-label="Welcome tour">
+      <p class="eyebrow" id="tourStep">STEP 1 OF 5</p>
+      <h2 id="tourTitle"></h2>
+      <p id="tourBody"></p>
+      <div class="tour-actions">
+        <button type="button" class="text-link" id="tourSkip">Skip tour</button>
+        <div class="tour-nav">
+          <button type="button" class="small-outline" id="tourBack">Back</button>
+          <button type="button" class="primary-button" id="tourNext">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="js/app.js?v=10"></script>
+  <script type="module" src="js/app.js?v=11"></script>
 </body>
 </html>
